@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background -->
+  <circle cx="50" cy="50" r="45" fill="#10b981" />
+  
+  <!-- Book Base -->
+  <path d="M30 30 L30 70 L70 70 L70 30 Z" fill="#ffffff" />
+  
+  <!-- Book Pages -->
+  <path d="M50 30 L50 70" stroke="#10b981" stroke-width="2" />
+  
+  <!-- Cross on the Bible -->
+  <path d="M42 40 L58 40 M50 35 L50 45" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+  
+  <!-- Decorative elements -->
+  <path d="M35 50 L45 50 M35 55 L45 55 M35 60 L45 60" stroke="#10b981" stroke-width="1.5" />
+  <path d="M55 50 L65 50 M55 55 L65 55 M55 60 L65 60" stroke="#10b981" stroke-width="1.5" />
+</svg>

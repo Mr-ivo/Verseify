@@ -1,14 +1,36 @@
 import { motion } from 'framer-motion';
 import { useBible } from '../context/BibleContext';
 import { Bible } from '../services/bibleApi';
+import { useState } from 'react';
 
 export const BibleSelector = () => {
   const { bibles, selectedBible, setSelectedBible, setSelectedBook, setSelectedChapter, isLoading, error } = useBible();
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(bibles.length / itemsPerPage);
+  
+  // Calculate which Bibles to display based on current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const visibleBibles = bibles.slice(startIndex, endIndex);
 
   const handleBibleSelect = (bible: Bible) => {
     setSelectedBible(bible);
     setSelectedBook(null);
     setSelectedChapter(null);
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
   const container = {
@@ -28,25 +50,8 @@ export const BibleSelector = () => {
 
   if (error && !bibles.length) {
     return (
-      <div className="w-full rounded-lg bg-red-50 border border-red-200 p-6">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3">
-            <h3 className="text-lg font-medium text-red-800">Unable to load Bible translations</h3>
-            <div className="mt-2 text-red-700">
-              {error.includes('API key') ? (
-                <>
-                  <p className="mb-2"><strong>API Key Error:</strong> Please check your Bible API key.</p>
-                  <p>You need to get a key from <a href="https://scripture.api.bible" target="_blank" rel="noopener noreferrer" className="underline font-medium">scripture.api.bible</a> and add it to your .env file as VITE_BIBLE_API_KEY.</p>
-                </>
-              ) : error}
-            </div>
-          </div>
-        </div>
+      <div className="w-full rounded-lg bg-red-50 border border-red-200 p-4">
+        <p className="text-red-700">{error}</p>
       </div>
     );
   }
@@ -80,50 +85,92 @@ export const BibleSelector = () => {
       animate="show"
       variants={container}
     >      
-      <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-        variants={container}
-      >
-        {bibles.map((bible) => (
-          <motion.div
-            key={bible.id}
-            variants={item}
-            whileHover={{ 
-              scale: 1.03,
-              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
+      <div className="flex flex-col space-y-4">
+        <motion.div 
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          variants={container}
+          key={`page-${currentPage}`} // Re-animate when page changes
+        >
+          {visibleBibles.map((bible) => (
+            <motion.div
+              key={bible.id}
+              variants={item}
+              whileHover={{ 
+                scale: 1.03,
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <button
+                onClick={() => handleBibleSelect(bible)}
+                className={`w-full h-full flex flex-col items-center justify-center p-6 border rounded-xl transition-all duration-300 shadow-sm ${
+                  selectedBible?.id === bible.id 
+                    ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500 ring-opacity-50' 
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-emerald-100 mb-3">
+                  <span className="font-bold text-lg text-emerald-700">{bible.abbreviation}</span>
+                </div>
+                <span className="font-medium text-gray-900 text-center mb-1">{bible.name}</span>
+                <div className="mt-2 px-3 py-1 bg-gray-100 rounded-full">
+                  <span className="text-xs text-gray-600">{bible.language.name}</span>
+                </div>
+                
+                {selectedBible?.id === bible.id && (
+                  <motion.div 
+                    className="mt-3 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                  >
+                    Selected
+                  </motion.div>
+                )}
+              </button>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Pagination Navigation */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center mt-6 space-x-4">
             <button
-              onClick={() => handleBibleSelect(bible)}
-              className={`w-full h-full flex flex-col items-center justify-center p-6 border rounded-xl transition-all duration-300 shadow-sm ${
-                selectedBible?.id === bible.id 
-                  ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500 ring-opacity-50' 
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                currentPage === 1 
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
               }`}
             >
-              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-emerald-100 mb-3">
-                <span className="font-bold text-lg text-emerald-700">{bible.abbreviation}</span>
-              </div>
-              <span className="font-medium text-gray-900 text-center mb-1">{bible.name}</span>
-              <div className="mt-2 px-3 py-1 bg-gray-100 rounded-full">
-                <span className="text-xs text-gray-600">{bible.language.name}</span>
-              </div>
-              
-              {selectedBible?.id === bible.id && (
-                <motion.div 
-                  className="mt-3 bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-medium"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                >
-                  Selected
-                </motion.div>
-              )}
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Previous
             </button>
-          </motion.div>
-        ))}
-      </motion.div>
+            
+            <div className="text-sm font-medium text-gray-700">
+              Page {currentPage} of {totalPages}
+            </div>
+            
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                currentPage === totalPages 
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
 
       {bibles.length === 0 && !isLoading && !error && (
         <div className="text-center py-12">

@@ -3,18 +3,44 @@ import { BookSelector } from '../components/BookSelector';
 import { ChapterSelector } from '../components/ChapterSelector';
 import { useBible } from '../context/BibleContext';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const HomePage = () => {
   const { selectedBible, selectedBook, error, fetchBibles } = useBible();
+  const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchBibles();
   }, [fetchBibles]);
 
+  // Improved function to handle scrolling to top
+  function goToTop() {
+    // Method 1: Using scrollIntoView with smooth behavior
+    if (topRef.current) {
+      topRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+      return;
+    }
+    
+    // Method 2: Fallback for browsers that don't support scrollIntoView with smooth behavior
+    try {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth'
+      });
+    } catch (error) {
+      // Method 3: Ultimate fallback for older browsers
+      window.scrollTo(0, 0);
+    }
+  }
+
   return (
     <div className="flex flex-col w-full min-h-screen bg-white">
-      <span id="top" className="scroll-mt-16"></span>
+      {/* Top anchor for back-to-top functionality */}
+      <div id="top" ref={topRef}></div>
       
       {/* Hero Section */}
       <motion.section 
@@ -212,10 +238,16 @@ export const HomePage = () => {
         </div>
       </motion.section>
 
+      {/* Super simple back to top button */}
       <a 
         href="#top"
-        className="fixed bottom-8 right-8 p-3 rounded-full bg-emerald-700 text-white shadow-xl hover:bg-emerald-800 transition-all z-50 flex items-center justify-center"
+        onClick={(e) => {
+          e.preventDefault();
+          goToTop();
+        }}
+        className="cursor-pointer fixed bottom-8 right-8 p-3 rounded-full bg-emerald-700 text-white shadow-xl hover:bg-emerald-800 transition-all z-50 flex items-center justify-center"
         style={{ zIndex: 9999 }}
+        aria-label="Back to top"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
