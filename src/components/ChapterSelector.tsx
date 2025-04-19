@@ -1,32 +1,23 @@
-import { useEffect, useState } from 'react';
+
 import { bibleApi, Chapter } from '../services/bibleApi';
 import { useBible } from '../context/BibleContext';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+function useChaptersQuery(bibleId?: string, bookId?: string) {
+  return useQuery<Chapter[], Error>({
+    queryKey: ['chapters', bibleId, bookId],
+    queryFn: () => (bibleId && bookId) ? bibleApi.getChapters(bibleId, bookId) : Promise.resolve([]),
+    enabled: !!bibleId && !!bookId,
+    staleTime: 1000 * 60 * 60,
+    retry: 2,
+  });
+}
+
 export const ChapterSelector = () => {
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const { selectedBible, selectedBook, setSelectedChapter, isLoading, setIsLoading, setError } = useBible();
-
-  useEffect(() => {
-    const fetchChapters = async () => {
-      if (!selectedBible || !selectedBook) return;
-      
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await bibleApi.getChapters(selectedBible.id, selectedBook.id);
-        setChapters(data);
-      } catch (err) {
-        setError('Failed to load chapters. Please try again.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChapters();
-  }, [selectedBible, selectedBook, setIsLoading, setError]);
+  const { selectedBible, selectedBook, setSelectedChapter } = useBible();
+  const { data: chapters = [], isLoading, error } = useChaptersQuery(selectedBible?.id, selectedBook?.id);
 
   const handleChapterSelect = (chapter: Chapter) => {
     setSelectedChapter(chapter);
@@ -83,6 +74,8 @@ export const ChapterSelector = () => {
               </div>
             </div>
           </div>
+        ) : error ? (
+          <div className="p-6 text-center text-red-600">{error.message || 'Failed to load chapters.'}</div>
         ) : (
           <div className="p-6">
             {chapters.length === 0 ? (
@@ -100,7 +93,7 @@ export const ChapterSelector = () => {
                   initial="hidden"
                   animate="show"
                 >
-                  {chapters.map((chapter) => (
+                  {chapters.map((chapter: Chapter) => (
                     <Link to="/reader" key={chapter.id}>
                       <motion.div
                         variants={item}

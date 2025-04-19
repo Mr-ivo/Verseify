@@ -1,5 +1,15 @@
-import { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import { createContext, useState, useContext, ReactNode } from 'react';
 import { Bible, Book, Chapter, bibleApi } from '../services/bibleApi';
+import { useQuery } from '@tanstack/react-query';
+
+function useBiblesQuery() {
+  return useQuery<Bible[], Error>({
+    queryKey: ['bibles'],
+    queryFn: bibleApi.getBibles,
+    staleTime: 1000 * 60 * 60, // 1 hour,
+    retry: 2,
+  });
+}
 
 interface BibleContextType {
   bibles: Bible[];
@@ -10,41 +20,17 @@ interface BibleContextType {
   selectedChapter: Chapter | null;
   setSelectedChapter: (chapter: Chapter | null) => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
   error: string | null;
-  setError: (error: string | null) => void;
-  fetchBibles: () => Promise<void>;
 }
 
 const BibleContext = createContext<BibleContextType | undefined>(undefined);
 
 export const BibleProvider = ({ children }: { children: ReactNode }) => {
-  const [bibles, setBibles] = useState<Bible[]>([]);
   const [selectedBible, setSelectedBible] = useState<Bible | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchBibles = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await bibleApi.getBibles();
-      setBibles(data);
-    } catch (err: any) {
-      console.error('Error fetching bibles:', err);
-      // Check if the error might be related to authentication/API key
-      
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
-        setError('API key invalid or missing. Please check your .env file and ensure you have a valid API key from https://scripture.api.bible/');
-      } else {
-        setError('Failed to load Bibles. Please try again later.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { data: bibles = [], isLoading, error } = useBiblesQuery();
 
   return (
     <BibleContext.Provider
@@ -57,10 +43,9 @@ export const BibleProvider = ({ children }: { children: ReactNode }) => {
         selectedChapter,
         setSelectedChapter: (chapter: Chapter | null) => setSelectedChapter(chapter),
         isLoading,
-        setIsLoading,
-        error,
-        setError,
-        fetchBibles,
+        error: error ? (error.message === 'Request failed with status code 401' || error.message === 'Request failed with status code 403'
+          ? 'API key invalid or missing. Please check your .env file and ensure you have a valid API key from https://scripture.api.bible/'
+          : 'Failed to load Bibles. Please try again later.') : null,
       }}
     >
       {children}

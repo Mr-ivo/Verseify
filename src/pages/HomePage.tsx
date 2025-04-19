@@ -6,12 +6,8 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
 export const HomePage = () => {
-  const { selectedBible, selectedBook, error, fetchBibles } = useBible();
+  const { selectedBible, selectedBook, error } = useBible();
   const topRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchBibles();
-  }, [fetchBibles]);
 
   // Improved function to handle scrolling to top
   function goToTop() {

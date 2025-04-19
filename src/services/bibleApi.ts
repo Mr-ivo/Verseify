@@ -1,6 +1,4 @@
 import axios from 'axios';
-
-// Create an axios instance with base URL and default headers
 const api = axios.create({
   baseURL: 'https://api.scripture.api.bible/v1',
   headers: {

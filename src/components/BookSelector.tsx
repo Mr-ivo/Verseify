@@ -1,49 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { bibleApi, Book } from '../services/bibleApi';
 import { useBible } from '../context/BibleContext';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 
+function useBooksQuery(bibleId?: string) {
+  return useQuery<Book[], Error>({
+    queryKey: ['books', bibleId],
+    queryFn: () => bibleId ? bibleApi.getBooks(bibleId) : Promise.resolve([]),
+    enabled: !!bibleId,
+    staleTime: 1000 * 60 * 60,
+    retry: 2,
+  });
+}
+
 export const BookSelector = () => {
-  const [oldTestament, setOldTestament] = useState<Book[]>([]);
-  const [newTestament, setNewTestament] = useState<Book[]>([]);
   const [activeTab, setActiveTab] = useState<'old' | 'new'>('old');
-  const { selectedBible, setSelectedBook, setSelectedChapter, isLoading, setIsLoading, setError } = useBible();
-  const [allBooks, setAllBooks] = useState<Book[]>([]);
-
-  useEffect(() => {
-    const fetchBooks = async () => {
-      if (!selectedBible) return;
-      
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await bibleApi.getBooks(selectedBible.id);
-        setAllBooks(data);
-
-        const oldBooks = [];
-        const newBooks = [];
-        
-        for (const book of data) {
-          // Simple heuristic: if book ID is in the New Testament list or has a name that starts with common NT book names
-          if (isNewTestamentBook(book)) {
-            newBooks.push(book);
-          } else {
-            oldBooks.push(book);
-          }
-        }
-        
-        setOldTestament(oldBooks);
-        setNewTestament(newBooks);
-      } catch (err) {
-        setError('Failed to load books. Please try again.');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBooks();
-  }, [selectedBible, setIsLoading, setError]);
+  const { selectedBible, setSelectedBook, setSelectedChapter } = useBible();
+  
+  const { data: books = [], isLoading, error } = useBooksQuery(selectedBible?.id);
 
   // Helper function to determine if a book is in the New Testament
   const isNewTestamentBook = (book: Book) => {
@@ -91,10 +66,24 @@ export const BookSelector = () => {
     show: { opacity: 1, y: 0 }
   };
 
+  // Split books into Old and New Testament using useMemo for performance
+  const { oldTestament, newTestament } = useMemo(() => {
+    const oldBooks: Book[] = [];
+    const newBooks: Book[] = [];
+    for (const book of books) {
+      if (isNewTestamentBook(book)) {
+        newBooks.push(book);
+      } else {
+        oldBooks.push(book);
+      }
+    }
+    return { oldTestament: oldBooks, newTestament: newBooks };
+  }, [books]);
+
   // Show all books if no books are found in the selected testament
   const booksToDisplay = activeTab === 'old' ? 
-    (oldTestament.length > 0 ? oldTestament : allBooks) : 
-    (newTestament.length > 0 ? newTestament : allBooks);
+    (oldTestament.length > 0 ? oldTestament : books) : 
+    (newTestament.length > 0 ? newTestament : books);
 
   return (
     <motion.div
@@ -153,6 +142,8 @@ export const BookSelector = () => {
               </div>
             </div>
           </div>
+        ) : error ? (
+          <div className="p-6 text-center text-red-600">{error.message || 'Failed to load books.'}</div>
         ) : (
           <div className="p-6">
             {booksToDisplay.length === 0 ? (
@@ -171,7 +162,7 @@ export const BookSelector = () => {
                 animate="show"
                 key={activeTab} 
               >
-                {booksToDisplay.map((book) => (
+                {booksToDisplay.map((book: Book) => (
                   <motion.div
                     key={book.id}
                     variants={item}
