@@ -230,9 +230,20 @@ export const ScriptureContent = () => {
       <style>
         {
           `
+            .scripture-content {
+              letter-spacing: 0.13em;
+              word-spacing: 0.25em;
+              line-height: 2.1;
+              padding: 2.5rem 1.5rem;
+              background: #f8fafc;
+              border-radius: 1.25rem;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+              font-family: 'Georgia', 'Times New Roman', Times, serif;
+            }
             .scripture-content p {
-              margin-bottom: 1em;
-              line-height: 1.6;
+              margin-bottom: 2em;
+              line-height: 2.1;
+              font-size: 1.18em;
             }
             .dark-mode-content p {
               color: rgba(255, 255, 255, 0.9);
