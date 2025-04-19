@@ -16,7 +16,8 @@ export const SearchPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { selectedBible, error, setError } = useBible();
+  const { selectedBible } = useBible();
+const [localError, setLocalError] = useState<string | null>(null);
 
   const handleSearch = async (query: string) => {
     if (!selectedBible) return;
@@ -25,17 +26,18 @@ export const SearchPage = () => {
       setIsSearching(true);
       setSearchPerformed(true);
       setSearchQuery(query);
-      setError(null);
+      setLocalError(null);
+
       
       const results = await bibleApi.search(selectedBible.id, query);
       setSearchResults(results.verses || []);
       
       if (results.verses && results.verses.length === 0) {
-        setError(`No results found for "${query}"`);
+        setLocalError(`No results found for "${query}"`);
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError('Failed to search. Please try again.');
+      setLocalError('Failed to search. Please try again.');
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -128,7 +130,7 @@ export const SearchPage = () => {
             </motion.div>
           )}
 
-          {error && (
+          {localError && (
             <motion.div 
               className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded-r-md shadow-sm" 
               role="alert"
@@ -136,7 +138,7 @@ export const SearchPage = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <p>{error}</p>
+              <p>{localError}</p>
             </motion.div>
           )}
 
@@ -195,7 +197,7 @@ export const SearchPage = () => {
                   ))}
                 </ul>
               </motion.div>
-            ) : searchPerformed && searchResults.length === 0 && !error ? (
+            ) : searchPerformed && searchResults.length === 0 && !localError ? (
               <motion.div 
                 className="text-center py-12 bg-white rounded-lg shadow-lg"
                 initial={{ opacity: 0, y: 20 }}

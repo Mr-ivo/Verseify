@@ -3,7 +3,7 @@ import { BookSelector } from '../components/BookSelector';
 import { ChapterSelector } from '../components/ChapterSelector';
 import { useBible } from '../context/BibleContext';
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 export const HomePage = () => {
   const { selectedBible, selectedBook, error } = useBible();
